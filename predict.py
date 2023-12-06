@@ -26,8 +26,17 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
 MODEL_NAME = "playgroundai/playground-v2-1024px-aesthetic"
 FEATURE_EXTRACTOR = "./feature-extractor"
 
-SDXL_MODEL_CACHE = "./sdxl-cache"
-SDXL_URL = "https://weights.replicate.delivery/default/playgroundai/sdxl-cache.tar"
+PGV2_MODEL_CACHE = "./sdxl-cache"
+PGV2_MODEL_512_CACHE = "./sdxl-cache-512"
+PGV2_MODEL_256_CACHE = "./sdxl-cache-256"
+
+PGV2_URL = "https://weights.replicate.delivery/default/playgroundai/sdxl-cache.tar"
+PGV2_URL_512 = (
+    "https://weights.replicate.delivery/default/playgroundai/sdxl-cache-512.tar"
+)
+PGV2_URL_256 = (
+    "https://weights.replicate.delivery/default/playgroundai/sdxl-cache-256.tar"
+)
 
 SAFETY_CACHE = "./safety-cache"
 SAFETY_URL = "https://weights.replicate.delivery/default/playgroundai/safety-cache.tar"
@@ -54,16 +63,8 @@ def download_weights(url, dest):
 class Predictor(BasePredictor):
     def setup(self) -> None:
         """Load the model into memory to make running multiple predictions efficient"""
-
-        if not os.path.exists(SDXL_MODEL_CACHE):
-            download_weights(SDXL_URL, SDXL_MODEL_CACHE)
-        self.pipe = DiffusionPipeline.from_pretrained(
-            SDXL_MODEL_CACHE,
-            torch_dtype=torch.float16,
-            use_safetensors=True,
-            variant="fp16",
-        )
-        self.pipe.to("cuda")
+        self.load_model(PGV2_URL, PGV2_MODEL_CACHE)
+        self.playground_model_loaded = "playground-v2-1024px-aesthetic"
 
         if not os.path.exists(SAFETY_CACHE):
             download_weights(SAFETY_URL, SAFETY_CACHE)
@@ -73,6 +74,17 @@ class Predictor(BasePredictor):
         )
         self.safety_checker.to("cuda")
         self.feature_extractor = CLIPImageProcessor.from_pretrained(FEATURE_EXTRACTOR)
+
+    def load_model(self, url_to_model, cache_to_model):
+        if not os.path.exists(cache_to_model):
+            download_weights(url_to_model, cache_to_model)
+        self.pipe = DiffusionPipeline.from_pretrained(
+            cache_to_model,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+        )
+        self.pipe.to("cuda")
 
     def run_safety_checker(self, image):
         safety_checker_input = self.feature_extractor(image, return_tensors="pt").to(
@@ -96,12 +108,21 @@ class Predictor(BasePredictor):
             description="Input Negative Prompt",
             default="",
         ),
+        playground_model: str = Input(
+            description="Select the size of the Playground V2 model you'd like to use",
+            default="playground-v2-1024px-aesthetic",
+            choices=[
+                "playground-v2-256px-base",
+                "playground-v2-512px-base",
+                "playground-v2-1024px-aesthetic",
+            ],
+        ),
         width: int = Input(
-            description="Width of output image",
+            description="Width of output image, remember to change depending on `playground_model` chosen",
             default=1024,
         ),
         height: int = Input(
-            description="Height of output image",
+            description="Height of output image, remember to change depending on `playground_model` chosen",
             default=1024,
         ),
         scheduler: str = Input(
@@ -118,32 +139,33 @@ class Predictor(BasePredictor):
         seed: int = Input(
             description="Random seed. Leave blank to randomize the seed", default=None
         ),
-        apply_watermark: bool = Input(
-            description="Applies a watermark to enable determining if an image is generated in downstream applications. If you have other provisions for generating or deploying images safely, you can use this to disable watermarking.",
-            default=False,
-        ),
         disable_safety_checker: bool = Input(
             description="Disable safety checker for generated images",
             default=False,
         ),
     ) -> List[Path]:
         """Run a single prediction on the model"""
+
+        if self.playground_model_loaded != playground_model:
+            if playground_model == "playground-v2-1024px-aesthetic":
+                self.load_model(PGV2_URL, PGV2_MODEL_CACHE)
+            elif playground_model == "playground-v2-512px-base":
+                self.load_model(PGV2_URL_512, PGV2_MODEL_512_CACHE)
+            else:  # if playground_model == "playground-v2-256px-base"
+                self.load_model(PGV2_URL_256, PGV2_MODEL_256_CACHE)
+            self.playground_model_loaded = playground_model
+
         if seed is None:
             seed = int.from_bytes(os.urandom(2), "big")
         print(f"Using seed: {seed}")
 
-        sdxl_kwargs = {}
-        sdxl_kwargs["width"] = width
-        sdxl_kwargs["height"] = height
+        PGV2_kwargs = {}
+        PGV2_kwargs["width"] = width
+        PGV2_kwargs["height"] = height
         pipe = self.pipe
 
         pipe.scheduler = SCHEDULERS[scheduler].from_config(pipe.scheduler.config)
         generator = torch.Generator("cuda").manual_seed(seed)
-
-        if not apply_watermark:
-            # toggles watermark for this prediction
-            watermark_cache = pipe.watermark
-            pipe.watermark = None
 
         common_args = {
             "prompt": prompt,
@@ -153,10 +175,7 @@ class Predictor(BasePredictor):
             "num_inference_steps": num_inference_steps,
         }
 
-        output = pipe(**common_args, **sdxl_kwargs)
-
-        if not apply_watermark:
-            pipe.watermark = watermark_cache
+        output = pipe(**common_args, **PGV2_kwargs)
 
         if not disable_safety_checker:
             _, has_nsfw_content = self.run_safety_checker(output.images)
