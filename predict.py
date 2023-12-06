@@ -107,13 +107,13 @@ class Predictor(BasePredictor):
         scheduler: str = Input(
             description="scheduler",
             choices=SCHEDULERS.keys(),
-            default="DDIM",
+            default="K_EULER_ANCESTRAL",
         ),
         num_inference_steps: int = Input(
             description="Number of denoising steps", ge=1, le=500, default=50
         ),
         guidance_scale: float = Input(
-            description="Scale for classifier-free guidance", ge=1, le=50, default=7.5
+            description="Scale for classifier-free guidance", ge=1, le=50, default=3.0
         ),
         seed: int = Input(
             description="Random seed. Leave blank to randomize the seed", default=None
