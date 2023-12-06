@@ -13,11 +13,10 @@ build:
     - "wget"
   python_packages:
     - "diffusers>=0.24.0"
-    # - "torch==2.0.1"
     - "transformers==4.35.2"
     - "accelerate==0.25.0"
     - "safetensors==0.4.1"
 
   run:
-    - curl -o /usr/local/bin/pget -L "https://github.com/replicate/pget/releases/download/v0.3.0/pget" && chmod +x /usr/local/bin/pget
+    - curl -o /usr/local/bin/pget -L "https://github.com/replicate/pget/releases/download/v0.3.1/pget" && chmod +x /usr/local/bin/pget
 predict: "predict.py:Predictor"

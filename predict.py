@@ -25,9 +25,12 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
 
 MODEL_NAME = "playgroundai/playground-v2-1024px-aesthetic"
 FEATURE_EXTRACTOR = "./feature-extractor"
-SDXL_MODEL_CACHE = "sdxl-cache/"
+
+SDXL_MODEL_CACHE = "./sdxl-cache"
 SDXL_URL = "https://weights.replicate.delivery/default/playgroundai/sdxl-cache.tar"
+
 SAFETY_CACHE = "./safety-cache"
+SAFETY_URL = "https://weights.replicate.delivery/default/playgroundai/safety-cache.tar"
 
 
 SCHEDULERS = {
@@ -62,10 +65,13 @@ class Predictor(BasePredictor):
         )
         self.pipe.to("cuda")
 
+        if not os.path.exists(SAFETY_CACHE):
+            download_weights(SAFETY_URL, SAFETY_CACHE)
         self.safety_checker = StableDiffusionSafetyChecker.from_pretrained(
             SAFETY_CACHE,
             torch_dtype=torch.float16,
-        ).to("cuda")
+        )
+        self.safety_checker.to("cuda")
         self.feature_extractor = CLIPImageProcessor.from_pretrained(FEATURE_EXTRACTOR)
 
     def run_safety_checker(self, image):
@@ -114,7 +120,7 @@ class Predictor(BasePredictor):
         ),
         apply_watermark: bool = Input(
             description="Applies a watermark to enable determining if an image is generated in downstream applications. If you have other provisions for generating or deploying images safely, you can use this to disable watermarking.",
-            default=True,
+            default=False,
         ),
         disable_safety_checker: bool = Input(
             description="Disable safety checker for generated images",

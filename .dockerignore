@@ -1,6 +1,6 @@
-# sdxl-cache/
+sdxl-cache/
 refiner-cache/
-# safety-cache/
+safety-cache/
 trained-model/
 *.png
 cache/
