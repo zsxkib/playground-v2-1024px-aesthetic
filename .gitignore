@@ -20,3 +20,4 @@ checkpoint*
 weights
 __*.zip
 **-cache
+sdxl-cache.tar

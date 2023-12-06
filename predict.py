@@ -26,8 +26,8 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
 MODEL_NAME = "playgroundai/playground-v2-1024px-aesthetic"
 FEATURE_EXTRACTOR = "./feature-extractor"
 SDXL_MODEL_CACHE = "sdxl-cache/"
+SDXL_URL = "https://weights.replicate.delivery/default/playgroundai/sdxl-cache.tar"
 SAFETY_CACHE = "./safety-cache"
-SAFETY_URL = "https://weights.replicate.delivery/default/sdxl/safety-1.0.tar"
 
 
 SCHEDULERS = {
@@ -51,6 +51,9 @@ def download_weights(url, dest):
 class Predictor(BasePredictor):
     def setup(self) -> None:
         """Load the model into memory to make running multiple predictions efficient"""
+
+        if not os.path.exists(SDXL_MODEL_CACHE):
+            download_weights(SDXL_URL, SDXL_MODEL_CACHE)
         self.pipe = DiffusionPipeline.from_pretrained(
             SDXL_MODEL_CACHE,
             torch_dtype=torch.float16,
@@ -59,11 +62,9 @@ class Predictor(BasePredictor):
         )
         self.pipe.to("cuda")
 
-        if not os.path.exists(SAFETY_CACHE):
-            download_weights(SAFETY_URL, SAFETY_CACHE)
-
         self.safety_checker = StableDiffusionSafetyChecker.from_pretrained(
-            SAFETY_CACHE, torch_dtype=torch.float16
+            SAFETY_CACHE,
+            torch_dtype=torch.float16,
         ).to("cuda")
         self.feature_extractor = CLIPImageProcessor.from_pretrained(FEATURE_EXTRACTOR)
 

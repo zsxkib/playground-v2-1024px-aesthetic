@@ -1,11 +1,6 @@
-# The .dockerignore file excludes files from the container build process.
-#
-# https://docs.docker.com/engine/reference/builder/#dockerignore-file
-
-# Replicate
-sdxl-cache/
+# sdxl-cache/
 refiner-cache/
-safety-cache/
+# safety-cache/
 trained-model/
 *.png
 cache/
@@ -32,23 +27,10 @@ weights
 inference_*
 trained-model
 *.zip
+sdxl-cache.tar
 tmp/
 blip-cache/
 clipseg-cache/
 swin2sr-cache/
 weights-cache/
 tests/
-
-# Exclude Git files
-.git
-.github
-.gitignore
-
-# Exclude Python cache files
-__pycache__
-.mypy_cache
-.pytest_cache
-.ruff_cache
-
-# Exclude Python virtual environment
-/venv

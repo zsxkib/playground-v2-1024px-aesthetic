@@ -2,28 +2,22 @@
 # Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
 
 build:
-  # set to true if your model requires a GPU
   gpu: true
-
-  # a list of ubuntu apt packages to install
-  # system_packages:
-  #   - "libgl1-mesa-glx"
-  #   - "libglib2.0-0"
-
-  # python version in the form '3.11' or '3.11.4'
-  python_version: "3.11"
-
-  # a list of packages in the format <package-name>==<version>
+  cuda: "12.1"
+  python_version: "3.9"
+  system_packages:
+    - "libgl1-mesa-glx"
+    - "ffmpeg"
+    - "libsm6"
+    - "libxext6"
+    - "wget"
   python_packages:
-    - "diffusers >= 0.24.0"
-    - "transformers"
-    - "accelerate"
-    - "safetensors"
+    - "diffusers>=0.24.0"
+    # - "torch==2.0.1"
+    - "transformers==4.35.2"
+    - "accelerate==0.25.0"
+    - "safetensors==0.4.1"
 
-  # commands run after the environment is setup
-  # run:
-  #   - "echo env is ready!"
-  #   - "echo another command if needed"
-
-# predict.py defines how predictions are run on your model
+  run:
+    - curl -o /usr/local/bin/pget -L "https://github.com/replicate/pget/releases/download/v0.3.0/pget" && chmod +x /usr/local/bin/pget
 predict: "predict.py:Predictor"
