@@ -117,7 +117,7 @@ class Predictor(BasePredictor):
             default=True,
         ),
         disable_safety_checker: bool = Input(
-            description="Disable safety checker for generated images. This feature is only available through the API. See [https://replicate.com/docs/how-does-replicate-work#safety](https://replicate.com/docs/how-does-replicate-work#safety)",
+            description="Disable safety checker for generated images",
             default=False,
         ),
     ) -> List[Path]:
